@@ -705,10 +705,6 @@ void SiWriteSysLog(SERVER *s, char *typestr, char *hubname, wchar_t *message)
 		return;
 	}
 
-	if (GetGlobalServerFlag(GSF_DISABLE_SYSLOG) != 0)
-	{
-		return;
-	}
 
 	// Host name
 	GetMachineName(machinename, sizeof(machinename));
@@ -1156,25 +1152,7 @@ void GetServerCaps(SERVER *s, CAPSLIST *t)
 	Unlock(s->CapsCacheLock);
 }
 
-// Update the global server flags
-void UpdateGlobalServerFlags(SERVER *s, CAPSLIST *t)
-{
-	bool is_restricted = false;
-	// Validate arguments
-	if (s == NULL || t == NULL)
-	{
-		return;
-	}
 
-	is_restricted = SiIsEnterpriseFunctionsRestrictedOnOpenSource(s->Cedar);
-
-	SetGlobalServerFlag(GSF_DISABLE_PUSH_ROUTE, is_restricted);
-	SetGlobalServerFlag(GSF_DISABLE_RADIUS_AUTH, is_restricted);
-	SetGlobalServerFlag(GSF_DISABLE_CERT_AUTH, is_restricted);
-	SetGlobalServerFlag(GSF_DISABLE_DEEP_LOGGING, is_restricted);
-	SetGlobalServerFlag(GSF_DISABLE_AC, is_restricted);
-	SetGlobalServerFlag(GSF_DISABLE_SYSLOG, is_restricted);
-}
 
 // Set a global server flag
 void SetGlobalServerFlag(UINT index, UINT value)
@@ -1203,7 +1181,6 @@ UINT GetGlobalServerFlag(UINT index)
 // Main of the acquisition of Caps of the server
 void GetServerCapsMain(SERVER *s, CAPSLIST *t)
 {
-	bool is_restricted = false;
 
 	// Validate arguments
 	if (s == NULL || t == NULL)
@@ -1211,7 +1188,6 @@ void GetServerCapsMain(SERVER *s, CAPSLIST *t)
 		return;
 	}
 
-	is_restricted = SiIsEnterpriseFunctionsRestrictedOnOpenSource(s->Cedar);
 
 	// Initialize
 	InitCapsList(t);
@@ -1357,7 +1333,7 @@ void GetServerCapsMain(SERVER *s, CAPSLIST *t)
 	AddCapsBool(t, "b_support_securenat", true);
 
 	// Pushing routing table function of SecureNAT Virtual DHCP Server is available
-	AddCapsBool(t, "b_suppport_push_route", !is_restricted);
+	AddCapsBool(t, "b_suppport_push_route", true);
 	AddCapsBool(t, "b_suppport_push_route_config", true);
 
 	if (s->ServerType != SERVER_TYPE_STANDALONE)
@@ -1599,7 +1575,6 @@ void GetServerCapsMain(SERVER *s, CAPSLIST *t)
 	AddCapsBool(t, "b_vpn4", true);
 
 
-	UpdateGlobalServerFlags(s, t);
 }
 
 // SYSLOG_SETTING
@@ -3087,10 +3062,6 @@ FOLDER *SiWriteConfigurationToCfg(SERVER *s)
 	}
 
 	root = CfgCreateFolder(NULL, TAG_ROOT);
-
-	SiGetCurrentRegion(s->Cedar, region, sizeof(region));
-
-	CfgAddStr(root, "Region", region);
 
 	CfgAddInt(root, "ConfigRevision", s->ConfigRevision);
 
@@ -10548,34 +10519,6 @@ FARM_CONTROLLER *SiStartConnectToController(SERVER *s)
 	return f;
 }
 
-// Get the current version
-void SiGetCurrentRegion(CEDAR *c, char *region, UINT region_size)
-{
-	ClearStr(region, region_size);
-	// Validate arguments
-	if (c == NULL || region == NULL)
-	{
-		return;
-	}
-
-	Lock(c->CurrentRegionLock);
-	{
-		StrCpy(region, region_size, c->CurrentRegion);
-	}
-	Unlock(c->CurrentRegionLock);
-
-	if (IsEmptyStr(region))
-	{
-		if (GetCurrentLangId() == SE_LANG_JAPANESE)
-		{
-			StrCpy(region, region_size, "JP");
-		}
-		else if (GetCurrentLangId() == SE_LANG_CHINESE_ZH)
-		{
-			StrCpy(region, region_size, "CN");
-		}
-	}
-}
 
 // Check whether some enterprise functions are restricted
 // 
@@ -10609,60 +10552,6 @@ void SiGetCurrentRegion(CEDAR *c, char *region, UINT region_size)
 // Anyone, except Daiyuu Nobori, who understands and writes the C language
 // program can remove this restriction at his own risk.
 // 
-bool SiIsEnterpriseFunctionsRestrictedOnOpenSource(CEDAR *c)
-{
-	char region[128];
-	bool ret = false;
-	// Validate arguments
-	if (c == NULL)
-	{
-		return false;
-	}
-
-
-	SiGetCurrentRegion(c, region, sizeof(region));
-
-	if (StrCmpi(region, "JP") == 0 || StrCmpi(region, "CN") == 0)
-	{
-		ret = true;
-	}
-
-	return ret;
-}
-
-// Update the current region
-void SiUpdateCurrentRegion(CEDAR *c, char *region, bool force_update)
-{
-	bool changed = false;
-	// Validate arguments
-	if (c == NULL)
-	{
-		return;
-	}
-
-	if (IsEmptyStr(region) == false)
-	{
-		Lock(c->CurrentRegionLock);
-		{
-			if (StrCmpi(c->CurrentRegion, region) != 0)
-			{
-				StrCpy(c->CurrentRegion, sizeof(c->CurrentRegion), region);
-				changed = true;
-			}
-		}
-		Unlock(c->CurrentRegionLock);
-	}
-
-	if (force_update)
-	{
-		changed = true;
-	}
-
-	if (changed)
-	{
-		FlushServerCaps(c->Server);
-	}
-}
 
 // Create a server
 SERVER *SiNewServer(bool bridge)
@@ -10820,7 +10709,6 @@ SERVER *SiNewServerEx(bool bridge, bool in_client_inner_server, bool relay_serve
 
 	SiInitDeadLockCheck(s);
 
-	SiUpdateCurrentRegion(s->Cedar, "", true);
 
 	return s;
 }

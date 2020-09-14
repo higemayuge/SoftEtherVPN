@@ -3276,10 +3276,6 @@ UINT StSetAcList(ADMIN *a, RPC_AC_LIST *t)
 		return ERR_NOT_SUPPORTED;
 	}
 
-	if (GetGlobalServerFlag(GSF_DISABLE_AC) != 0 && LIST_NUM(t->o) >= 1)
-	{
-		return ERR_NOT_SUPPORTED_FUNCTION_ON_OPENSOURCE;
-	}
 
 	CHECK_RIGHT;
 	NO_SUPPORT_FOR_BRIDGE;
@@ -4724,10 +4720,6 @@ UINT StSetSysLog(ADMIN *a, SYSLOG_SETTING *t)
 
 	SERVER_ADMIN_ONLY;
 
-	if (GetGlobalServerFlag(GSF_DISABLE_SYSLOG) != 0 && t->SaveType != SYSLOG_NONE)
-	{
-		return ERR_NOT_SUPPORTED_FUNCTION_ON_OPENSOURCE;
-	}
 
 	if (GetServerCapsBool(s, "b_support_syslog") == false)
 	{
@@ -6131,14 +6123,6 @@ UINT StSetUser(ADMIN *a, RPC_SET_USER *t)
 
 	CHECK_RIGHT;
 
-	if (GetGlobalServerFlag(GSF_DISABLE_RADIUS_AUTH) != 0)
-	{
-		if (t->AuthType == AUTHTYPE_USERCERT || t->AuthType == AUTHTYPE_RADIUS || t->AuthType == AUTHTYPE_ROOTCERT || t->AuthType == AUTHTYPE_NT)
-		{
-			return ERR_NOT_SUPPORTED_AUTH_ON_OPENSOURCE;
-		}
-	}
-
 	if (StrCmpi(t->Name, "*") == 0)
 	{
 		if (t->AuthType != AUTHTYPE_RADIUS && t->AuthType != AUTHTYPE_NT)
@@ -6264,13 +6248,6 @@ UINT StCreateUser(ADMIN *a, RPC_SET_USER *t)
 
 	CHECK_RIGHT;
 
-	if (GetGlobalServerFlag(GSF_DISABLE_RADIUS_AUTH) != 0)
-	{
-		if (t->AuthType == AUTHTYPE_USERCERT || t->AuthType == AUTHTYPE_RADIUS || t->AuthType == AUTHTYPE_ROOTCERT || t->AuthType == AUTHTYPE_NT)
-		{
-			return ERR_NOT_SUPPORTED_AUTH_ON_OPENSOURCE;
-		}
-	}
 
 	if (t->AuthType == AUTHTYPE_USERCERT)
 	{
@@ -8757,11 +8734,6 @@ UINT StSetHubRadius(ADMIN *a, RPC_RADIUS *t)
 	if (s->ServerType == SERVER_TYPE_FARM_MEMBER)
 	{
 		return ERR_NOT_SUPPORTED;
-	}
-
-	if (GetGlobalServerFlag(GSF_DISABLE_RADIUS_AUTH) != 0 && IsEmptyStr(t->RadiusServerName) == false)
-	{
-		return ERR_NOT_SUPPORTED_FUNCTION_ON_OPENSOURCE;
 	}
 
 	CHECK_RIGHT;

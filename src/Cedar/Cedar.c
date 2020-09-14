@@ -1177,7 +1177,6 @@ void CleanupCedar(CEDAR *c)
 
 	DeleteLock(c->OpenVPNPublicPortsLock);
 
-	DeleteLock(c->CurrentRegionLock);
 
 	DeleteLock(c->CurrentTcpQueueSizeLock);
 	DeleteLock(c->QueueBudgetLock);
@@ -1437,7 +1436,6 @@ CEDAR *NewCedar(X *server_x, K *server_k)
 
 	c->CedarSuperLock = NewLock();
 
-	c->CurrentRegionLock = NewLock();
 
 #ifdef	BETA_NUMBER
 	c->Beta = BETA_NUMBER;

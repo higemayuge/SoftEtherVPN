@@ -825,10 +825,6 @@ bool IsIpDeniedByAcList(IP *ip, LIST *o)
 		return false;
 	}
 
-	if (GetGlobalServerFlag(GSF_DISABLE_AC) != 0)
-	{
-		return false;
-	}
 
 	for (i = 0;i < LIST_NUM(o);i++)
 	{
@@ -856,11 +852,6 @@ bool IsIpMaskedByAc(IP *ip, AC *ac)
 	UINT uip, net, mask;
 	// Validate arguments
 	if (ip == NULL || ac == NULL)
-	{
-		return false;
-	}
-
-	if (GetGlobalServerFlag(GSF_DISABLE_AC) != 0)
 	{
 		return false;
 	}
